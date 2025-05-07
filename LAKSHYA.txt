@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Attendance System - Class 1 to 10</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: rgb(98, 182, 231);
+    }
+
+    .header {
+      text-align: center;
+      background: rgb(123, 224, 93);
+      padding: 10px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .header img {
+      height: 100px;
+    }
+
+    .header h1 {
+      margin: 5px 0;
+      font-size: 28px;
+      color: #8e44ca;
+    }
+
+    h2, h3 {
+      margin-bottom: 10px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    table, th, td {
+      border: 1px solid #444;
+    }
+
+    th, td {
+      padding: 6px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #e9544f;
+    }
+
+    input, select, button {
+      margin: 5px;
+      padding: 6px;
+    }
+
+    #message {
+      color: green;
+      font-weight: bold;
+    }
+
+    #loginOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+
+    #loginBox {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+
+    @media print {
+      button, input, select {
+        display: none;
+      }
+
+      .header h1 {
+        color: black;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- LOGIN OVERLAY -->
+  <div id="loginOverlay">
+    <div id="loginBox">
+      <h2>Login</h2>
+      <input type="text" id="loginUser" placeholder="Username"><br>
+      <input type="password" id="loginPass" placeholder="Password">
+      <input type="checkbox" onclick="togglePassword()"> Show Password<br>
+      <button onclick="validateLogin()">Login</button><br><br>
+      <button onclick="resetPassword()">Forgot Password?</button>
+      <button onclick="changeCredentials()">Change Username/Password/Regester Mobile Number</button>
+      <p id="loginMsg" style="color:red;"></p>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT (Hidden initially) -->
+  <div id="mainContent" style="display:none;">
+
+    <!-- Header with Logo -->
+    <div class="header">
+      <img src="c:\Users\user\OneDrive\Pictures\Saved Pictures\lakshyavaishali-1081492908202306.jpg" alt="School Logo">
+      <h1>LAKSHYA INTERNATIONAL ACADEMY</h1>
+    </div>
+
+    <h2>Attendance System (Class 1 to 10)</h2>
+
+    <!-- Add Student -->
+    <h3>Add Student</h3>
+    <input type="text" id="studentName" placeholder="Student Name">
+    <input type="text" id="admissionNo" placeholder="Admission No.">
+    <input type="text" id="fatherName" placeholder="Father's Name">
+    <input type="text" id="mobile" placeholder="Mobile Number">
+    <select id="studentClass">
+      <option value="">Select Class</option>
+    </select>
+    <input type="text" id="rollNo" placeholder="Roll No.">
+    <button onclick="addStudent()">Add Student</button>
+
+    <!-- Mark Attendance -->
+    <h3>Mark Attendance</h3>
+    <label>Select Date:</label>
+    <input type="date" id="attendanceDate"><br>
+
+    <table id="attendanceTable">
+      <thead>
+        <tr>
+          <th>Class</th>
+          <th>Roll No</th>
+          <th>Name</th>
+          <th>Admission No</th>
+          <th>Father's Name</th>
+          <th>Mobile</th>
+          <th>Status</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <button onclick="saveAttendance()">?? Save Attendance</button>
+    <button onclick="exportPDF()">?? Export to PDF</button>
+    <button onclick="window.print()">??? Print</button>
+
+    <p id="message"></p>
+
+    <!-- View Attendance Records -->
+    <h3>?? View Attendance Records</h3>
+    <select id="viewDateDropdown" onchange="viewAttendanceByDate()">
+      <option value="">-- Select Date --</option>
+    </select>
+
+    <div id="viewAttendanceTable"></div>
+
+    <!-- Delete Attendance -->
+    <h3>??? Delete Saved Attendance</h3>
+    <select id="deleteDateDropdown">
+      <option value="">-- Select Date --</option>
+    </select>
+    <button onclick="deleteAttendanceByDate()">??? Delete Attendance</button>
+
+    <!-- Stats Section -->
+    <h3>?? Attendance Statistics</h3>
+    <button onclick="calculateStats()">?? Show Monthly & Yearly Stats</button>
+    <div id="statsContainer"></div>
+
+    <h3>?? Top 3 Students with Highest Attendance</h3>
+    <div id="topStudents"></div>
+  </div>
+
+  <!-- JS Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- SCRIPT -->
+  <script>
+    // ========== LOGIN HANDLING ==========
+    let storedUser = localStorage.getItem("loginUser") || "LIA ATT";
+    let storedPass = localStorage.getItem("loginPass") || "LAKSHYA LIALTT 00099";
+    const registeredPhone = "9525849809";
+
+    function togglePassword() {
+      const pass = document.getElementById("loginPass");
+      pass.type = pass.type === "password" ? "text" : "password";
+    }
+
+    function validateLogin() {
+      const user = document.getElementById("loginUser").value.trim();
+      const pass = document.getElementById("loginPass").value.trim();
+
+      if (user === storedUser && pass === storedPass) {
+        document.getElementById("loginOverlay").style.display = "none";
+        document.getElementById("mainContent").style.display = "block";
+      } else {
+        document.getElementById("loginMsg").innerText = "? Incorrect Username or Password!";
+      }
+    }
+
+    function resetPassword() {
+      const otp = prompt(`An OTP has been sent to ${registeredPhone}.\nEnter the OTP: (Hint: 123456)`);
+      if (otp === "123456") {
+        const newPass = prompt("Enter new password:");
+        if (newPass) {
+          localStorage.setItem("loginPass", newPass);
+          alert("? Password reset successfully.");
+        }
+      } else {
+        alert("? Incorrect OTP.");
+      }
+    }
+
+    function changeCredentials() {
+      const currentPass = prompt("Enter current password:");
+      if (currentPass === storedPass) {
+        const newUser = prompt("Enter new username:");
+        const newPass = prompt("Enter new password:");
+        if (newUser && newPass) {
+          localStorage.setItem("loginUser", newUser);
+          localStorage.setItem("loginPass", newPass);
+          alert("? Credentials updated. Please log in again.");
+          location.reload();
+        }
+      } else {
+        alert("? Incorrect current password.");
+      }
+    }
+
+    // ========== EXISTING FUNCTIONS ==========
+
+    const studentClassSelect = document.getElementById("studentClass");
+    for (let i = 1; i <= 10; i++) {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `Class ${i}`;
+      studentClassSelect.appendChild(opt);
+    }
+
+    let students = JSON.parse(localStorage.getItem("students") || "[]");
+    renderStudentTable();
+
+    function addStudent() {
+      const name = document.getElementById("studentName").value.trim();
+      const admission = document.getElementById("admissionNo").value.trim();
+      const father = document.getElementById("fatherName").value.trim();
+      const mobile = document.getElementById("mobile").value.trim();
+      const cls = document.getElementById("studentClass").value;
+      const roll = document.getElementById("rollNo").value.trim();
+
+      if (!name || !admission || !father || !cls || !roll || !mobile) {
+        alert("Please fill all student details.");
+        return;
+      }
+
+      students.push({ id: Date.now(), name, admission, father, cls, roll, mobile });
+      localStorage.setItem("students", JSON.stringify(students));
+      renderStudentTable();
+      document.querySelectorAll("#studentName, #admissionNo, #fatherName, #studentClass, #rollNo, #mobile").forEach(el => el.value = '');
+    }
+
+    function deleteStudent(id) {
+      if (confirm("Are you sure to delete this student and their attendance records?")) {
+        students = students.filter(s => s.id !== id);
+        localStorage.setItem("students", JSON.stringify(students));
+        let attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
+        for (let date in attendance) {
+          attendance[date] = attendance[date].filter(a => a.id !== id);
+        }
+        localStorage.setItem("attendance", JSON.stringify(attendance));
+        renderStudentTable();
+        updateDateDropdown();
+        viewAttendanceByDate();
+      }
+    }
+
+    function renderStudentTable() {
+      const tbody = document.querySelector("#attendanceTable tbody");
+      tbody.innerHTML = "";
+      students.forEach(student => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${student.cls}</td>
+          <td>${student.roll}</td>
+          <td>${student.name}</td>
+          <td>${student.admission}</td>
+          <td>${student.father}</td>
+          <td>${student.mobile}</td>
+          <td><select data-id="${student.id}"><option value="Present">Present</option><option value="Absent">Absent</option></select></td>
+          <td><button onclick="deleteStudent(${student.id})">Delete</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveAttendance() {
+      const date = document.getElementById("attendanceDate").value;
+      if (!date) return alert("Please select a date.");
+      const selects = document.querySelectorAll('select[data-id]');
+      let attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
+      attendance[date] = [];
+      selects.forEach(select => {
+        const id = Number(select.getAttribute("data-id"));
+        const student = students.find(s => s.id === id);
+        const status = select.value;
+        attendance[date].push({ ...student, status });
+      });
+      localStorage.setItem("attendance", JSON.stringify(attendance));
+      document.getElementById("message").innerText = `? Attendance saved for ${date}`;
+      updateDateDropdown();
+    }
+
+    function deleteAttendanceByDate() {
+      const selectedDate = document.getElementById("deleteDateDropdown").value;
+      if (!selectedDate) return alert("Please select a date to delete.");
+      if (confirm(`Delete attendance for ${selectedDate}?`)) {
+        let attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
+        delete attendance[selectedDate];
+        localStorage.setItem("attendance", JSON.stringify(attendance));
+        alert(`? Attendance for ${selectedDate} deleted.`);
+        updateDateDropdown();
+        viewAttendanceByDate();
+      }
+    }
+
+    function updateDateDropdown() {
+      const attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
+      const viewDropdown = document.getElementById("viewDateDropdown");
+      const deleteDropdown = document.getElementById("deleteDateDropdown");
+      viewDropdown.innerHTML = '<option value="">-- Select Date --</option>';
+      deleteDropdown.innerHTML = '<option value="">-- Select Date --</option>';
+      Object.keys(attendance).forEach(date => {
+        [viewDropdown, deleteDropdown].forEach(dropdown => {
+          const opt = document.createElement("option");
+          opt.value = date;
+          opt.textContent = date;
+          dropdown.appendChild(opt);
+        });
+      });
+    }
+
+    function viewAttendanceByDate() {
+      const date = document.getElementById("viewDateDropdown").value;
+      const container = document.getElementById("viewAttendanceTable");
+      if (!date) return container.innerHTML = "";
+      const records = JSON.parse(localStorage.getItem("attendance") || "{}")[date] || [];
+      let html = `<h4>Attendance for ${date}</h4><table><tr><th>Class</th><th>Roll</th><th>Name</th><th>Adm</th><th>Father</th><th>Mobile</th><th>Status</th></tr>`;
+      records.forEach(r => {
+        html += `<tr><td>${r.cls}</td><td>${r.roll}</td><td>${r.name}</td><td>${r.admission}</td><td>${r.father}</td><td>${r.mobile}</td><td>${r.status}</td></tr>`;
+      });
+      container.innerHTML = html + "</table>";
+    }
+
+    function calculateStats() {
+      const attendance = JSON.parse(localStorage.getItem("attendance") || "{}");
+      const countMap = {};
+      for (let date in attendance) {
+        attendance[date].forEach(r => {
+          if (!countMap[r.id]) countMap[r.id] = { present: 0, total: 0, name: r.name };
+          countMap[r.id].total++;
+          if (r.status === "Present") countMap[r.id].present++;
+        });
+      }
+      let html = "<ul>";
+      for (let id in countMap) {
+        const s = countMap[id];
+        const percent = ((s.present / s.total) * 100).toFixed(1);
+        html += `<li>${s.name}: ${s.present}/${s.total} days (${percent}%)</li>`;
+      }
+      html += "</ul>";
+      document.getElementById("statsContainer").innerHTML = html;
+      const top3 = Object.entries(countMap).sort((a,b) => b[1].present - a[1].present).slice(0, 3);
+      let topHtml = "<ol>";
+      top3.forEach(([id, s]) => topHtml += `<li>${s.name} - ${s.present} Present days</li>`);
+      document.getElementById("topStudents").innerHTML = topHtml + "</ol>";
+    }
+
+    window.onload = updateDateDropdown;
+  </script>
+
+</body>
+</html>
